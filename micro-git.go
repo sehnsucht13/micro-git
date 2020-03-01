@@ -27,6 +27,17 @@ func FindRepoRoot() (string, error) {
 	return "", errors.New("Repository root directory cannot be found.")
 }
 
+func FindRelPath(filePath string) string {
+	repoRoot, err := FindRepoRoot()
+	if err != nil{
+		fmt.Println("Failed to find repo root!")
+		os.Exit(2)
+	}
+	rel, _ := filepath.Rel(repoRoot, filePath)
+	return rel
+
+}
+
 func hashFile(fileName string) string {
 	h := sha1.New()
 	file, err := os.Open(fileName)
@@ -53,9 +64,14 @@ func compressFileContents(fileName string) []byte{
 	return compressedBuff.Bytes()
 }
 
-/*
 // Add files to index
 func AddFiles(filePaths ...string){
+	repoRoot, err := FindRepoRoot()
+	if err != nil{
+		fmt.Println("Not in a repo")
+		os.Exit(1)
+	}
+
 	for _, filePath := range filePaths{
 		_, err := os.Stat(filePath)
 		if err != nil{
@@ -63,11 +79,13 @@ func AddFiles(filePaths ...string){
 		}else{
 			sha1String := hashFile(filePath)
 			compFile := compressFileContents(filePath)
-			os.Mkdir()
+			// Create folder to hold new blob/tree and add compressed file
+			blobFolderPath := filepath.Join(repoRoot, ".micro-git", sha1String[0:2])
+			os.Mkdir(blobFolderPath, 0755)
+			ioutil.WriteFile(filepath.Join(blobFolderPath, sha1String[2:]), compFile, 0755)
 		}
 	}
 }
-*/
 
 func dirExists(dirPath string) bool {
 	_, err := os.Stat(dirPath)
@@ -95,7 +113,8 @@ func InitRepo(dirPath string, quiet bool) {
 		os.Mkdir(filepath.Join(repoFolder, "refs", "heads"), 0755)
 		os.Mkdir(filepath.Join(repoFolder, "refs", "tags"), 0755)
 		// Create files
-		//head_test := []byte("ref: refs/heads/master")
+		headContents := []byte("ref: refs/heads/master")
+		ioutil.WriteFile(filepath.Join(repoFolder, "HEAD"), headContents, 0755)
 		if !quiet {
 			fmt.Println("Empty repository initialized in", string(currPath), "successfully!")
 		}
