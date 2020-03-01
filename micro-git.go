@@ -6,11 +6,26 @@ import (
 	"os"
 	"path/filepath"
 	"io"
+	"io/ioutil"
 	"crypto/sha1"
 	"log"
 	"encoding/hex"
-	//"io/ioutil"
+	"compress/zlib"
+	"bytes"
+	"errors"
 )
+
+func FindRepoRoot() (string, error) {
+	workDir, _ := os.Getwd()
+	userHomeDir, _ := os.UserHomeDir()
+	for workDir != userHomeDir{
+		if _, err := os.Stat(filepath.Join(workDir, ".micro-git")); err == nil{
+			return workDir, nil
+		}
+		workDir = filepath.Dir(workDir)
+	}
+	return "", errors.New("Repository root directory cannot be found.")
+}
 
 func hashFile(fileName string) string {
 	h := sha1.New()
@@ -26,16 +41,46 @@ func hashFile(fileName string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+func compressFileContents(fileName string) []byte{
+	contents, err := ioutil.ReadFile(fileName)
+	if err != nil{
+		fmt.Println("Could not open file!")
+	}
+	var compressedBuff bytes.Buffer
+	zWriter := zlib.NewWriter(&compressedBuff)
+	zWriter.Write(contents)
+	zWriter.Close()
+	return compressedBuff.Bytes()
+}
+
+/*
+// Add files to index
+func AddFiles(filePaths ...string){
+	for _, filePath := range filePaths{
+		_, err := os.Stat(filePath)
+		if err != nil{
+			fmt.Println("File or directory", filePath, "cannot be added.")
+		}else{
+			sha1String := hashFile(filePath)
+			compFile := compressFileContents(filePath)
+			os.Mkdir()
+		}
+	}
+}
+*/
+
 func dirExists(dirPath string) bool {
 	_, err := os.Stat(dirPath)
 
 	if os.IsNotExist(err) {
 		return false
 	}
-
+	// No need to check if the file with the same name is a folder of
+	// a file. Files and folders cannot have the same names.
 	return true
 }
 
+// Create a new bare repository for project located at dirPath
 func InitRepo(dirPath string, quiet bool) {
 	currPath, err := filepath.Abs(dirPath)
 	if err != nil {
@@ -74,7 +119,9 @@ func main() {
 		initCmd.Parse(os.Args[2:])
 		InitRepo(".", *initCmdQuiet)
 	case "add":
-		hashFile(os.Args[2])
+		//hashFile(os.Args[2])
+		//compressFileContents(os.Args[2])
+		//file, err := FindRepoRoot()
 	default:
 		fmt.Println("Invalid Command!")
 		os.Exit(1)
