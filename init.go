@@ -1,9 +1,10 @@
 package main
+
 import (
-"os"
-"path/filepath"
-"io/ioutil"
-"fmt"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 // Create a new bare repository for project located at dirPath

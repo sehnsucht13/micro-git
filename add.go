@@ -1,32 +1,35 @@
 package main
-import ("os"
-"compress/zlib"
-"encoding/hex"
-"path/filepath"
-"bytes"
+
+import (
+	"bytes"
+	"compress/zlib"
+	"crypto/sha1"
+	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
-	"crypto/sha1"
-	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 )
+
 func hashFile(fileName string) string {
 	h := sha1.New()
 	file, err := os.Open(fileName)
-	if err != nil{
-		fmt.Println("Cannot access file", file,"Check if the file exists and access permitions are set.")
+	if err != nil {
+		fmt.Println("Cannot access file", file, "Check if the file exists and access permitions are set.")
 		os.Exit(2)
 	}
 	defer file.Close()
-	if _,err := io.Copy(h, file); err != nil{
+	if _, err := io.Copy(h, file); err != nil {
 		log.Fatal(err)
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func compressFileContents(fileName string) []byte{
+func compressFileContents(fileName string) []byte {
 	contents, err := ioutil.ReadFile(fileName)
-	if err != nil{
+	if err != nil {
 		fmt.Println("Could not open file!")
 	}
 	var compressedBuff bytes.Buffer
@@ -37,18 +40,18 @@ func compressFileContents(fileName string) []byte{
 }
 
 // Add files to index
-func AddFiles(filePaths ...string){
+func AddFiles(filePaths ...string) {
 	repoRoot, err := FindRepoRoot()
-	if err != nil{
+	if err != nil {
 		fmt.Println("Not in a repo")
 		os.Exit(1)
 	}
 
-	for _, filePath := range filePaths{
+	for _, filePath := range filePaths {
 		_, err := os.Stat(filePath)
-		if err != nil{
+		if err != nil {
 			fmt.Println("File or directory", filePath, "cannot be added.")
-		}else{
+		} else {
 			sha1String := hashFile(filePath)
 			compFile := compressFileContents(filePath)
 			// Create folder to hold new blob/tree and add compressed file

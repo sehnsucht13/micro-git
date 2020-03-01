@@ -10,7 +10,7 @@ func main() {
 	initCmd := flag.NewFlagSet("init", flag.ExitOnError)
 	initCmdQuiet := initCmd.Bool("quiet", false, "Suppress all text output to stdout except errors.")
 	flag.Parse()
-	if len(os.Args) < 2{
+	if len(os.Args) < 2 {
 		fmt.Println("Not enough arguments.")
 		os.Exit(2)
 	}

@@ -1,9 +1,10 @@
 package main
+
 import (
-"os"
-"path/filepath"
-"errors"
-"fmt"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 )
 
 func DirExists(dirPath string) bool {
@@ -20,8 +21,8 @@ func DirExists(dirPath string) bool {
 func FindRepoRoot() (string, error) {
 	workDir, _ := os.Getwd()
 	userHomeDir, _ := os.UserHomeDir()
-	for workDir != userHomeDir{
-		if _, err := os.Stat(filepath.Join(workDir, ".micro-git")); err == nil{
+	for workDir != userHomeDir {
+		if _, err := os.Stat(filepath.Join(workDir, ".micro-git")); err == nil {
 			return workDir, nil
 		}
 		workDir = filepath.Dir(workDir)
@@ -31,7 +32,7 @@ func FindRepoRoot() (string, error) {
 
 func FindRelPath(filePath string) string {
 	repoRoot, err := FindRepoRoot()
-	if err != nil{
+	if err != nil {
 		fmt.Println("Failed to find repo root!")
 		os.Exit(2)
 	}
@@ -39,4 +40,3 @@ func FindRelPath(filePath string) string {
 	return rel
 
 }
-
