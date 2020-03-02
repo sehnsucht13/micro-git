@@ -11,7 +11,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"errors"
+	"strconv"
 )
+
 
 func hashFile(fileName string) string {
 	h := sha1.New()
@@ -39,25 +42,38 @@ func compressFileContents(fileName string) []byte {
 	return compressedBuff.Bytes()
 }
 
-// Add files to index
-func AddFiles(filePaths ...string) {
+func storeFile(filePath string) (IndexEntry, error){
+	index_entry := IndexEntry{entry_type: blob}
 	repoRoot, err := FindRepoRoot()
 	if err != nil {
 		fmt.Println("Not in a repo")
 		os.Exit(1)
 	}
 
-	for _, filePath := range filePaths {
-		_, err := os.Stat(filePath)
-		if err != nil {
-			fmt.Println("File or directory", filePath, "cannot be added.")
-		} else {
-			sha1String := hashFile(filePath)
-			compFile := compressFileContents(filePath)
-			// Create folder to hold new blob/tree and add compressed file
-			blobFolderPath := filepath.Join(repoRoot, ".micro-git", sha1String[0:2])
-			os.Mkdir(blobFolderPath, 0755)
-			ioutil.WriteFile(filepath.Join(blobFolderPath, sha1String[2:]), compFile, 0755)
-		}
+	file, err := os.Stat(filePath)
+	if err != nil {
+		//fmt.Println("File located at", filePath, "cannot be added.")
+		return index_entry, errors.New("File cannot be accessed " + file.Name())
+	}
+	sha1String := hashFile(filePath)
+	compFile := compressFileContents(filePath)
+	// Create folder to hold new blob/tree and add compressed file
+	blobFolderPath := filepath.Join(repoRoot, ".micro-git", "objects", sha1String[0:2])
+	os.Mkdir(blobFolderPath, 0755)
+	ioutil.WriteFile(filepath.Join(blobFolderPath, sha1String[2:]), compFile, 0755)
+
+	index_entry.SetPerm("0" + strconv.FormatUint(uint64(file.Mode().Perm()), 8))
+	index_entry.SetHash(sha1String)
+	index_entry.SetName(file.Name())
+	return index_entry, nil
+}
+
+/*
+func AddFiles(filePaths ...string) {
+	repoRoot, err := FindRepoRoot()
+	if err != nil {
+		fmt.Println("Not in a repo")
+		os.Exit(1)
 	}
 }
+*/
