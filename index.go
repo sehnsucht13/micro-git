@@ -6,6 +6,8 @@ import (
 		"os"
 		"path/filepath"
 		"strings"
+		"sort"
+		"errors"
 )
 
 type FileType int
@@ -26,6 +28,10 @@ type IndexEntry struct{
 
 func (i IndexEntry) Name() string{
 	return i.entry_name
+}
+
+func (i IndexEntry) Hash() string{
+	return i.sha1_hash
 }
 
 func (i *IndexEntry) SetName(name string){
@@ -49,6 +55,23 @@ func (i IndexEntry) String() string{
 		file_type = "tree"
 	}
 	return fmt.Sprintf("%s %s %s %s", i.perm, file_type, i.sha1_hash, i.entry_name)
+}
+
+// Sorts entries in place
+func sortEntries(entries *[]IndexEntry) {
+	sort.Slice(entries, func(i, j int) bool { return (*entries)[i].entry_name < (*entries)[j].entry_name })
+}
+
+// Search for an IndexEntry corresponding to file entry_name.
+// If a corresponding entry is found then return its index and sha1 hash
+// If an entry is not found then return error
+func findEntry(entry_name string, entries []IndexEntry) (int, string, error){
+	numEntries := len(entries)
+	idx := sort.Search(numEntries, func(i int) bool{return entries[i].Name() == entry_name})
+	if entries[idx].Name() == entry_name{
+		return idx, entries[idx].Hash(), nil
+	}
+	return -1,"", errors.New("Element does not exist")
 }
 
 func GetIndexEntries() []IndexEntry{
@@ -79,3 +102,4 @@ func GetIndexEntries() []IndexEntry{
 	}
 	return index_entries
 }
+
