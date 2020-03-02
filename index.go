@@ -56,18 +56,21 @@ func (i IndexEntry) String() string {
 	return fmt.Sprintf("%s %s %s %s\n", i.perm, file_type, i.sha1_hash, i.entry_name)
 }
 
-// Sort Index entries in place.
-func sortIndexEntries(entries *[]IndexEntry) {
-	sort.Slice(entries, func(i, j int) bool { return (*entries)[i].entry_name < (*entries)[j].entry_name })
-}
+// Implement interface to sort IndexEntry slices in place
+type ByEntry []IndexEntry
+
+func (a ByEntry) Len() int           { return len(a) }
+func (a ByEntry) Less(i, j int) bool { return a[i].Name() < a[j].Name() }
+func (a ByEntry) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 // Search for an IndexEntry corresponding to file entry_name.
 // If a corresponding entry is found then return its index and sha1 hash.
 // If an entry is not found then return error.
 func findIndexEntry(entry_name string, entries []IndexEntry) (int, string, error) {
 	numEntries := len(entries)
+
 	idx := sort.Search(numEntries, func(i int) bool { return entries[i].Name() == entry_name })
-	if entries[idx].Name() == entry_name {
+	if idx < numEntries && entries[idx].Name() == entry_name {
 		return idx, entries[idx].Hash(), nil
 	}
 	return -1, "", errors.New("Element does not exist")
@@ -122,7 +125,7 @@ func AddIndexEntries(new_entries []IndexEntry) {
 	}
 
 	if sortEntries {
-		sortIndexEntries(&curr_entries)
+		sort.Sort(ByEntry(curr_entries))
 	}
 
 	rootPath, err := FindRepoRoot()
@@ -137,5 +140,4 @@ func AddIndexEntries(new_entries []IndexEntry) {
 	for _, entry := range curr_entries {
 		indexFile.WriteString(entry.String())
 	}
-
 }
