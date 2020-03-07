@@ -50,10 +50,10 @@ func checkFileIndex(files map[string]string) ([]string, []string) {
 
 func shortStatusMsg(changedFiles, newFiles []string) {
 	for _, modFilePath := range changedFiles {
-		fmt.Printf("M %s\n", modFilePath)
+		PrintColorSingleLine(ColorRed, fmt.Sprintf("M %s", modFilePath))
 	}
 	for _, untrackedFilePath := range newFiles {
-		fmt.Printf("?? %s\n", untrackedFilePath)
+		PrintColorSingleLine(ColorRed, fmt.Sprintf("?? %s", untrackedFilePath))
 	}
 
 }
@@ -61,11 +61,11 @@ func shortStatusMsg(changedFiles, newFiles []string) {
 func longStatusMsg(changedFiles, newFiles []string) {
 	fmt.Println("Changes not staged for commit:")
 	for _, modFilePath := range changedFiles {
-		fmt.Printf("\t %s\n", modFilePath)
+		PrintColorSingleLine(ColorRed, fmt.Sprintf("\t %s", modFilePath))
 	}
 	fmt.Println("Untracked files:")
 	for _, untrackedFilePath := range newFiles {
-		fmt.Printf("\t %s\n", untrackedFilePath)
+		PrintColorSingleLine(ColorRed, fmt.Sprintf("\t %s", untrackedFilePath))
 	}
 
 }
