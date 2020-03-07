@@ -24,6 +24,9 @@ func InitRepo(dirPath string, quiet bool) {
 		// Create files
 		headContents := []byte("ref: refs/heads/master")
 		ioutil.WriteFile(filepath.Join(repoFolder, "HEAD"), headContents, 0755)
+		indexFile, _ := os.Create(filepath.Join(repoFolder, "index"))
+		defer indexFile.Close()
+
 		if !quiet {
 			fmt.Println("Empty repository initialized in", string(currPath), "successfully!")
 		}

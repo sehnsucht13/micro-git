@@ -30,6 +30,14 @@ func FindRepoRoot() (string, error) {
 	return "", errors.New("Repository root directory cannot be found.")
 }
 
+func IsRepo() bool {
+		_, err := FindRepoRoot()
+		if err != nil{
+			return false
+		}
+		return true
+}
+
 func FindRelPath(filePath string) string {
 	repoRoot, err := FindRepoRoot()
 	if err != nil {
