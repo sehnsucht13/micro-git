@@ -7,6 +7,55 @@ import (
 	"path/filepath"
 )
 
+// Color utilities
+var colorNames = [...]string{
+	"\033[0m",    // Clear/Reset color
+	"\033[0;31m", // Red
+	"\033[0;32m", // Green
+	"\033[0;33m", // Yellow
+	"\033[0;34m", // Blue
+	"\033[0;35m", // Magenta
+	"\033[0;36m", // Cyan
+}
+
+type Color int
+// iota reset
+const (
+	ColorClear Color = iota
+	ColorRed
+	ColorGreen
+	ColorYellow
+	ColorBlue
+	ColorMagenta
+	ColorCyan
+)
+
+func SetColor(color Color){
+	fmt.Printf("%s", colorNames[color])
+}
+
+func ResetColor(){
+	fmt.Printf("%s", colorNames[ColorClear])
+}
+
+// PrintColor prints the string outputString to stdout using the specified color. The
+// terminal colors are reset after every print
+func PrintColorSingleLine(color Color, outputString string)  {
+	fmt.Printf("%s%s",colorNames[color], outputString)
+	fmt.Printf("%s\n", colorNames[ColorClear])
+}
+
+// FileExists checks and can be accessed if a file located at filePath
+// exists. Returns true if the file exists and false otherwise.
+func FileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
+	if err != nil {
+		return false
+	}
+	return true
+
+}
+
 func DirExists(dirPath string) bool {
 	_, err := os.Stat(dirPath)
 
@@ -31,11 +80,11 @@ func FindRepoRoot() (string, error) {
 }
 
 func IsRepo() bool {
-		_, err := FindRepoRoot()
-		if err != nil{
-			return false
-		}
-		return true
+	_, err := FindRepoRoot()
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func FindRelPath(filePath string) string {
