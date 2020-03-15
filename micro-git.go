@@ -21,26 +21,45 @@ func main() {
 	catCmdValid := catCmd.Bool("e", false, "Check if <object> exist and exit with status 0 if it does and status 1 otherwise.")
 	catCmdBatch := catCmd.Bool("batch", false, "Batch process objects using stdin.")
 
+	statusCmd := flag.NewFlagSet("status", flag.ExitOnError)
+	statusCmdShortDisp := statusCmd.Bool("s", false, "Give the output in short format.")
+	statusCmdLongDisp := statusCmd.Bool("long", true, "Give output in long format. This is the default.")
+
 	flag.Parse()
+
 	if len(os.Args) < 2 {
 		fmt.Println("Not enough arguments.")
+		flag.PrintDefaults()
 		os.Exit(2)
 	}
-
-	switch os.Args[1] {
-	case "init":
+	if os.Args[1] == "init" {
 		initCmd.Parse(os.Args[2:])
 		InitRepo(".", *initCmdQuiet)
-	case "add":
-		AddFiles(os.Args[2:])
-	case "cat-file":
-		if len(catCmd.Args()) > 1 {
-			fmt.Println("Can use at most one argument.")
+	} else {
+		_, err := FindRepoRoot()
+		if err != nil {
+			fmt.Println("Not currently visiting a micro-git repository.")
 			os.Exit(1)
 		}
-		CatFile(*catCmdSize, *catCmdPrettyPrint, *catCmdValid, *catCmdBatch, catCmd.Args())
-	default:
-		fmt.Println("Invalid Command!")
-		os.Exit(1)
+
+		switch os.Args[1] {
+		case "add":
+			AddFiles(os.Args[2:])
+		case "cat-file":
+			if len(catCmd.Args()) > 1 {
+				fmt.Println("cat-file accepts at most one argument.")
+				os.Exit(1)
+			}
+			catCmd.Parse(os.Args[2:])
+			CatFile(*catCmdSize, *catCmdPrettyPrint, *catCmdValid, *catCmdBatch, catCmd.Args())
+		case "status":
+			statusCmd.Parse(os.Args[2:])
+			Status(*statusCmdShortDisp, *statusCmdLongDisp)
+		case "config":
+			fmt.Println(GetConfigValues())
+		default:
+			fmt.Println("Invalid Command!")
+			os.Exit(1)
+		}
 	}
 }
