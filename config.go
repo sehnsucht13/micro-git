@@ -18,7 +18,7 @@ type configLevel int
 // iota reset:
 const (
 	localLevel configLevel = iota
-	userLevel
+	globalLevel
 	systemLevel
 )
 
@@ -40,7 +40,7 @@ func getConfig(level configLevel) (map[string]interface{}, error) {
 	case localLevel:
 		repoPath, _ := FindRepoRoot()
 		return readConfigFile(filepath.Join(repoPath, MicroGitDir))
-	case userLevel:
+	case globalLevel:
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return make(map[string]interface{}), errors.New("Cannot find user home directory.")
@@ -59,7 +59,7 @@ func overwriteConfig(level configLevel, contents map[string]interface{}) {
 	case localLevel:
 		repoPath, _ := FindRepoRoot()
 		ioutil.WriteFile(filepath.Join(repoPath, MicroGitDir, "config"), configBytes, 0644)
-	case userLevel:
+	case globalLevel:
 		homeDir, _ := os.UserHomeDir()
 		ioutil.WriteFile(filepath.Join(homeDir, "micro-gitconfig"), configBytes, 0644)
 	case systemLevel:
@@ -77,8 +77,21 @@ func ConfigListValues(level configLevel) {
 	}
 }
 
-func configSetValue() {
-
+func configSetValue(config map[string]interface{}, key, value string) (map[string]interface{}, error) {
+	localCopy := config
+	subKeys := strings.Split(key, ".")
+	if len(subKeys) != 2 {
+		return make(map[string]interface{}), errors.New("Invalid key provided.")
+	}
+	subConfig, subKeyPresent := (config[subKeys[0]]).(map[string]interface{})
+	if !subKeyPresent {
+		m := make(map[string]string)
+		m[subKeys[1]] = value
+		localCopy[subKeys[0]] = m
+	}
+	subConfig[subKeys[1]] = value
+	localCopy[subKeys[0]] = subConfig
+	return localCopy, nil
 }
 
 func configGetValue(config map[string]interface{}, key string) (string, error) {
@@ -90,7 +103,6 @@ func configGetValue(config map[string]interface{}, key string) (string, error) {
 	if !subKeyPresent {
 		return "", errors.New("Key does not exist!")
 	}
-	fmt.Println(subConfig)
 	val, subSubKeyPresent := subConfig[subKeys[1]].(string)
 	if !subSubKeyPresent {
 		return "", errors.New("Key does not exist!")
@@ -102,7 +114,19 @@ func Config(list bool, key, value, level string) {
 	var userConfig map[string]interface{}
 	switch level {
 	case "system":
+		config, err := getConfig(systemLevel)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		userConfig = config
 	case "global":
+		config, err := getConfig(globalLevel)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		userConfig = config
 	case "local":
 		_, err := FindRepoRoot()
 		if err != nil {
