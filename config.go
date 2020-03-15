@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	// "fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -53,27 +51,35 @@ func getConfig(level configLevel) (map[string]interface{}, error) {
 	}
 }
 
-func overwriteConfig(level configLevel, contents map[string]interface{}) {
+func overwriteConfig(level configLevel, contents map[string]interface{}) error{
 	configBytes, _ := json.Marshal(contents)
 	switch level {
 	case localLevel:
 		repoPath, _ := FindRepoRoot()
-		ioutil.WriteFile(filepath.Join(repoPath, MicroGitDir, "config"), configBytes, 0644)
+		err := ioutil.WriteFile(filepath.Join(repoPath, MicroGitDir, "micro-gitconfig"), configBytes, 0644)
+		if err != nil{
+			return err
+		}
 	case globalLevel:
 		homeDir, _ := os.UserHomeDir()
-		ioutil.WriteFile(filepath.Join(homeDir, "micro-gitconfig"), configBytes, 0644)
+		err := ioutil.WriteFile(filepath.Join(homeDir, "micro-gitconfig"), configBytes, 0644)
+		if err != nil{
+			return err
+		}
 	case systemLevel:
-		ioutil.WriteFile(filepath.Join("/etc", "micro-gitconfig"), configBytes, 0644)
+		err := ioutil.WriteFile(filepath.Join("/etc", "micro-gitconfig"), configBytes, 0644)
+		if err != nil{
+			return err
+		}
 	}
+	return nil
 }
 
-func ConfigListValues(level configLevel) {
-	configValues, err := getConfig(level)
-	if err != nil {
-		fmt.Println("Cannot retrieve configuration values")
-	}
-	for k, v := range configValues {
-		fmt.Println(k, v)
+func ConfigListValues(config map[string]interface{}) {
+	for k, v := range config {
+		for subk, subv := range v.(map[string]interface{}){
+			fmt.Println(fmt.Sprintf("%s.%s = %s", k, subk, subv.(string)))
+		}
 	}
 }
 
@@ -110,8 +116,9 @@ func configGetValue(config map[string]interface{}, key string) (string, error) {
 	return val, nil
 }
 
-func Config(list bool, key, value, level string) {
+func Config(list bool, key, value, level string, get, set bool) {
 	var userConfig map[string]interface{}
+	var configLevel configLevel
 	switch level {
 	case "system":
 		config, err := getConfig(systemLevel)
@@ -120,6 +127,7 @@ func Config(list bool, key, value, level string) {
 			os.Exit(1)
 		}
 		userConfig = config
+		configLevel = systemLevel
 	case "global":
 		config, err := getConfig(globalLevel)
 		if err != nil {
@@ -127,6 +135,7 @@ func Config(list bool, key, value, level string) {
 			os.Exit(1)
 		}
 		userConfig = config
+		configLevel = globalLevel
 	case "local":
 		_, err := FindRepoRoot()
 		if err != nil {
@@ -139,11 +148,36 @@ func Config(list bool, key, value, level string) {
 			os.Exit(1)
 		}
 		userConfig = config
+		configLevel = localLevel
 	// Case of a level not being chosen
 	case "":
 	default:
 		fmt.Println("Unknown configuration level provided!")
 		os.Exit(1)
 	}
-	fmt.Println(userConfig)
+
+	if get{
+		val, err := configGetValue(userConfig, key)
+		if err != nil{
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		fmt.Println(val)
+	}else if set{
+		newConfig, err := configSetValue(userConfig, key, value)
+		if err != nil{
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		fmt.Println(newConfig)
+		// Save the new config
+		err = overwriteConfig(configLevel, newConfig)
+		if err != nil{
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+	}else if list{
+		ConfigListValues(userConfig)
+	}
+	os.Exit(0)
 }
