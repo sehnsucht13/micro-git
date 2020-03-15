@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type configLevel int
@@ -66,12 +67,59 @@ func overwriteConfig(level configLevel, contents map[string]interface{}) {
 	}
 }
 
-func ConfigListValues(level configLevel){
+func ConfigListValues(level configLevel) {
 	configValues, err := getConfig(level)
-	if err != nil{
+	if err != nil {
 		fmt.Println("Cannot retrieve configuration values")
 	}
-	for k, v := range configValues{
-		fmt.Println(k,v)
+	for k, v := range configValues {
+		fmt.Println(k, v)
 	}
+}
+
+func configSetValue() {
+
+}
+
+func configGetValue(config map[string]interface{}, key string) (string, error) {
+	subKeys := strings.Split(key, ".")
+	if len(subKeys) != 2 {
+		return "", errors.New("Key does not exist.")
+	}
+	subConfig, subKeyPresent := (config[subKeys[0]]).(map[string]interface{})
+	if !subKeyPresent {
+		return "", errors.New("Key does not exist!")
+	}
+	fmt.Println(subConfig)
+	val, subSubKeyPresent := subConfig[subKeys[1]].(string)
+	if !subSubKeyPresent {
+		return "", errors.New("Key does not exist!")
+	}
+	return val, nil
+}
+
+func Config(list bool, key, value, level string) {
+	var userConfig map[string]interface{}
+	switch level {
+	case "system":
+	case "global":
+	case "local":
+		_, err := FindRepoRoot()
+		if err != nil {
+			fmt.Println("Not visiting a micro-git repository!")
+			os.Exit(1)
+		}
+		config, err := getConfig(localLevel)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		userConfig = config
+	// Case of a level not being chosen
+	case "":
+	default:
+		fmt.Println("Unknown configuration level provided!")
+		os.Exit(1)
+	}
+	fmt.Println(userConfig)
 }
