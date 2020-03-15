@@ -34,7 +34,20 @@ func main() {
 	}
 	if os.Args[1] == "init" {
 		initCmd.Parse(os.Args[2:])
-		InitRepo(".", *initCmdQuiet)
+		switch len(initCmd.Args()) {
+		case 0:
+			cwdPath, err := os.Getwd()
+			if err != nil {
+				fmt.Println("Cannot find current working directory.")
+				os.Exit(1)
+			}
+			InitRepo(cwdPath, *initCmdQuiet)
+		case 1:
+			InitRepo(initCmd.Args()[0], *initCmdQuiet)
+		default:
+			fmt.Println("micro-git init only accepts one repository path at a time!")
+			os.Exit(1)
+		}
 	} else {
 		_, err := FindRepoRoot()
 		if err != nil {
