@@ -10,6 +10,12 @@ func main() {
 	initCmd := flag.NewFlagSet("init", flag.ExitOnError)
 	initCmdQuiet := initCmd.Bool("quiet", false, "Suppress all text output to stdout except errors.")
 
+	configCmd := flag.NewFlagSet("config", flag.ExitOnError)
+	configCmdList := configCmd.Bool("list", false, "List all configuration values.")
+	configCmdLevel := configCmd.String("level", "", "Specify the level of the config")
+	configCmdKey := configCmd.String("key", "", "Set key  to value in configuration file.")
+	configCmdVal := configCmd.String("val", "", "Set specify value to set in configuration file.")
+
 	// addCmd := flag.NewFlagSet("add", flag.ExitOnError)
 	// addVerboseCmd := addCmd.Bool("verbose", false, "Display the information about each new or updated entry in the index file.")
 	// addDryRunCmd := addCmd.Bool("dry-run", false, "Display the information about each new or updated entry in the index file.")
@@ -48,7 +54,10 @@ func main() {
 			fmt.Println("micro-git init only accepts one repository path at a time!")
 			os.Exit(1)
 		}
-	} else {
+	}else if os.Args[1] == "config"{
+		configCmd.Parse(os.Args[2:])
+		Config(*configCmdList, *configCmdKey, *configCmdVal, *configCmdLevel)
+	}else {
 		_, err := FindRepoRoot()
 		if err != nil {
 			fmt.Println("Not currently visiting a micro-git repository.")
@@ -69,7 +78,6 @@ func main() {
 			statusCmd.Parse(os.Args[2:])
 			Status(*statusCmdShortDisp, *statusCmdLongDisp)
 		case "config":
-			fmt.Println(GetConfigValues())
 		default:
 			fmt.Println("Invalid Command!")
 			os.Exit(1)
