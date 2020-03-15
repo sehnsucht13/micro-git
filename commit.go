@@ -25,27 +25,42 @@ func buildCommitTree() string {
 	return tree.String()
 }
 
-func getCommitParent() string {
+func getCommitParent() (string, error) {
 	repoRoot, _ := FindRepoRoot()
 	repoHeadPath := filepath.Join(repoRoot, MicroGitDir, "HEAD")
+	readStatus, err := IsReadable(repoHeadPath)
+	if err != nil || !readStatus {
+		return "", errors.New("Cannot read parent commit.")
+	}
 	contents, _ := ioutil.ReadFile(repoHeadPath)
 	currentBranch := strings.Split(string(contents), " ")[1]
 	branchPath := filepath.Join(repoRoot, MicroGitDir, currentBranch)
-	headRef, err := ioutil.ReadFile(branchPath)
-	if err != nil {
-		return ""
+
+	readStatus, err = IsReadable(branchPath)
+	if err != nil || !readStatus {
+		return "", errors.New("Cannot read parent commit.")
 	}
-	fmt.Println(headRef)
-	return string(headRef)
+	// No need to check for error. We know that file is readable and it exists
+	headRef, _ := ioutil.ReadFile(branchPath)
+	return string(headRef), nil
 }
 
-func updateCurrentCommit(commitHash string) error{
+func updateCurrentCommit(commitHash string) error {
 	repoRoot, _ := FindRepoRoot()
 	repoHeadPath := filepath.Join(repoRoot, MicroGitDir, "HEAD")
+	readStatus, err := IsReadable(repoHeadPath)
+	if err != nil || !readStatus {
+		return errors.New("Cannot read HEAD file.")
+	}
+
 	contents, _ := ioutil.ReadFile(repoHeadPath)
 	currentBranch := strings.Split(string(contents), " ")[1]
 	branchPath := filepath.Join(repoRoot, MicroGitDir, currentBranch)
-	err := ioutil.WriteFile(branchPath, []byte(commitHash), 0644)
+	writeStatus, err := IsWritable(branchPath)
+	if err != nil || !writeStatus {
+		return errors.New("Cannot update branch head. File is not writable.")
+	}
+	err = ioutil.WriteFile(branchPath, []byte(commitHash), 0644)
 	return err
 }
 
@@ -68,16 +83,19 @@ func getCommitMessageContents() ([]byte, error) {
 	return ioutil.ReadFile(commitMsgPath)
 }
 
-func buildCommitFileContents(treeHash, commitMsg, commitParent string) string {
-	// Temp variables
-	name := "Yavor"
-	email := "Hello@gmail.comg"
-	return fmt.Sprintf("tree %s\nparent %s\nauthor %s\nemail %s\n%s", treeHash, commitParent, name, email, commitMsg)
+func buildCommitFileContents(userName, userEmail, treeHash, commitMsg, commitParent string) string {
+	return fmt.Sprintf("tree %s\nparent %s\nauthor %s\nemail %s\n%s", treeHash, commitParent, userName, userEmail, commitMsg)
 }
 
 func createCommit() error {
+	userEmail, emailError := findConfigValue("user.email")
+	userName, nameError := findConfigValue("user.name")
+	if emailError != nil || nameError != nil {
+		return errors.New("Cannot locate user name or email!")
+	}
+
 	commitTree := buildCommitTree()
-	indexEntry, err := addObjectFile(commitTree)
+	treeIndexEntry, err := addObjectFile(commitTree)
 	if err != nil {
 		return err
 	}
@@ -89,8 +107,15 @@ func createCommit() error {
 	if err != nil {
 		return errors.New("Could not retrieve commit message contents.")
 	}
-	commitParent := getCommitParent()
-	commitFileContets := buildCommitFileContents(indexEntry.Hash(), string(commitMessage), commitParent)
-	fmt.Println(commitFileContets)
+	commitParent, err := getCommitParent()
+	if err != nil {
+		return err
+	}
+	commitFileContent := buildCommitFileContents(userName, userEmail, treeIndexEntry.Hash(), string(commitMessage), commitParent)
+	commitIndexEntry, err := addObjectFile(commitFileContent)
+	if err != nil {
+		return err
+	}
+	updateCurrentCommit(commitIndexEntry.Hash())
 	return nil
 }
