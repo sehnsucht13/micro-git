@@ -51,24 +51,24 @@ func getConfig(level configLevel) (map[string]interface{}, error) {
 	}
 }
 
-func overwriteConfig(level configLevel, contents map[string]interface{}) error{
+func overwriteConfig(level configLevel, contents map[string]interface{}) error {
 	configBytes, _ := json.Marshal(contents)
 	switch level {
 	case localLevel:
 		repoPath, _ := FindRepoRoot()
 		err := ioutil.WriteFile(filepath.Join(repoPath, MicroGitDir, "micro-gitconfig"), configBytes, 0644)
-		if err != nil{
+		if err != nil {
 			return err
 		}
 	case globalLevel:
 		homeDir, _ := os.UserHomeDir()
 		err := ioutil.WriteFile(filepath.Join(homeDir, "micro-gitconfig"), configBytes, 0644)
-		if err != nil{
+		if err != nil {
 			return err
 		}
 	case systemLevel:
 		err := ioutil.WriteFile(filepath.Join("/etc", "micro-gitconfig"), configBytes, 0644)
-		if err != nil{
+		if err != nil {
 			return err
 		}
 	}
@@ -77,7 +77,7 @@ func overwriteConfig(level configLevel, contents map[string]interface{}) error{
 
 func ConfigListValues(config map[string]interface{}) {
 	for k, v := range config {
-		for subk, subv := range v.(map[string]interface{}){
+		for subk, subv := range v.(map[string]interface{}) {
 			fmt.Println(fmt.Sprintf("%s.%s = %s", k, subk, subv.(string)))
 		}
 	}
@@ -156,27 +156,27 @@ func Config(list bool, key, value, level string, get, set bool) {
 		os.Exit(1)
 	}
 
-	if get{
+	if get {
 		val, err := configGetValue(userConfig, key)
-		if err != nil{
+		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
 		fmt.Println(val)
-	}else if set{
+	} else if set {
 		newConfig, err := configSetValue(userConfig, key, value)
-		if err != nil{
+		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
 		fmt.Println(newConfig)
 		// Save the new config
 		err = overwriteConfig(configLevel, newConfig)
-		if err != nil{
+		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
-	}else if list{
+	} else if list {
 		ConfigListValues(userConfig)
 	}
 	os.Exit(0)

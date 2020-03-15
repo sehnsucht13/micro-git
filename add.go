@@ -31,13 +31,13 @@ func compressString(stringContent string) []byte {
 }
 
 // Compress and store a new file containing fileContent in the .micro-git/objects folder
-// Returns an IndexEntry containing its hash. 
+// Returns an IndexEntry containing its hash.
 // If this function is called from a directory which is not a micro-git repository
 // then return error
-func addObjectFile(fileContent string) (IndexEntry, error){
+func addObjectFile(fileContent string) (IndexEntry, error) {
 	index_entry := IndexEntry{entry_type: blob}
 	repoRoot, err := FindRepoRoot()
-	if err != nil{
+	if err != nil {
 		return index_entry, errors.New("Not currently visiting a repository!")
 	}
 	sha1String := hashString(fileContent)
@@ -67,15 +67,15 @@ func storeFile(absPath, relPath string) (IndexEntry, error) {
 	return index_entry, nil
 }
 
-func addDirectory(dirAbsPath, dirRelPath string) ([]IndexEntry, error){
+func addDirectory(dirAbsPath, dirRelPath string) ([]IndexEntry, error) {
 	var indexEntries []IndexEntry
 	dirFiles, _ := ioutil.ReadDir(dirAbsPath)
-	for _, file  := range dirFiles{
-		if fileStat, err := os.Stat(filepath.Join(dirAbsPath, file.Name())); err == nil{
-			if fileStat.IsDir(){
+	for _, file := range dirFiles {
+		if fileStat, err := os.Stat(filepath.Join(dirAbsPath, file.Name())); err == nil {
+			if fileStat.IsDir() {
 				subDirEntries, _ := addDirectory(filepath.Join(dirAbsPath, file.Name()), filepath.Join(dirRelPath, file.Name()))
 				indexEntries = append(indexEntries, subDirEntries...)
-			}else{
+			} else {
 				entry, _ := storeFile(filepath.Join(dirAbsPath, file.Name()), filepath.Join(dirRelPath, file.Name()))
 				indexEntries = append(indexEntries, entry)
 			}
@@ -84,26 +84,27 @@ func addDirectory(dirAbsPath, dirRelPath string) ([]IndexEntry, error){
 	return indexEntries, nil
 }
 
-func AddFiles(filePaths []string){
+func AddFiles(filePaths []string) {
 	var indexEntries []IndexEntry
-	if !IsRepo(){
+	if !IsRepo() {
 		fmt.Println("Not in a repo")
 		return
 	}
-	for _, path := range filePaths{
+	for _, path := range filePaths {
 		absPath, _ := filepath.Abs(path)
-		if fileStat, err := os.Stat(absPath); err == nil{
+		if fileStat, err := os.Stat(absPath); err == nil {
 			relPath := FindRelPath(absPath)
-			if fileStat.IsDir(){
+			if fileStat.IsDir() {
 				fmt.Println(absPath, relPath)
 				dirEntries, _ := addDirectory(absPath, relPath)
 				indexEntries = append(indexEntries, dirEntries...)
-			}else{
+			} else {
 				entry, _ := storeFile(absPath, relPath)
 				indexEntries = append(indexEntries, entry)
 			}
 		}
 	}
-
+	// TODO: Remove
 	fmt.Println("Index Entries", indexEntries)
+	AddIndexEntries(indexEntries)
 }

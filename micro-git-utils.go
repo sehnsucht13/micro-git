@@ -19,6 +19,7 @@ var colorNames = [...]string{
 }
 
 type Color int
+
 // iota reset
 const (
 	ColorClear Color = iota
@@ -30,18 +31,18 @@ const (
 	ColorCyan
 )
 
-func SetColor(color Color){
+func SetColor(color Color) {
 	fmt.Printf("%s", colorNames[color])
 }
 
-func ResetColor(){
+func ResetColor() {
 	fmt.Printf("%s", colorNames[ColorClear])
 }
 
 // PrintColor prints the string outputString to stdout using the specified color. The
 // terminal colors are reset after every print
-func PrintColorSingleLine(color Color, outputString string)  {
-	fmt.Printf("%s%s",colorNames[color], outputString)
+func PrintColorSingleLine(color Color, outputString string) {
+	fmt.Printf("%s%s", colorNames[color], outputString)
 	fmt.Printf("%s\n", colorNames[ColorClear])
 }
 
@@ -95,5 +96,4 @@ func FindRelPath(filePath string) string {
 	}
 	rel, _ := filepath.Rel(repoRoot, filePath)
 	return rel
-
 }
