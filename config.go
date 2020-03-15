@@ -116,6 +116,35 @@ func configGetValue(config map[string]interface{}, key string) (string, error) {
 	return val, nil
 }
 
+func findConfigValue(key string) (string, error) {
+	// Look at local level
+	config, err := getConfig(localLevel)
+	if err == nil {
+		val, err := configGetValue(config, key)
+		if err == nil {
+			return val, nil
+		}
+	}
+	// Look at global level if local level does not contain the key-value pair
+	config, err = getConfig(globalLevel)
+	if err == nil {
+		val, err := configGetValue(config, key)
+		if err == nil {
+			return val, nil
+		}
+	}
+	// Look at system level if local and global levels do not contain the
+	// key-value pair
+	config, err = getConfig(systemLevel)
+	if err == nil {
+		val, err := configGetValue(config, key)
+		if err == nil {
+			return val, nil
+		}
+	}
+	return "", errors.New("Config value does not exist.")
+}
+
 func Config(list bool, key, value, level string, get, set bool) {
 	var userConfig map[string]interface{}
 	var configLevel configLevel
