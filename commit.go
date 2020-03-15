@@ -25,18 +25,6 @@ func buildCommitTree() string {
 	return tree.String()
 }
 
-// Start user selected editor to create commit message
-func writeCommitMessage() error {
-	repoRoot, _ := FindRepoRoot()
-	commitMsgPath := filepath.Join(repoRoot, MicroGitDir, commitMsgFile)
-	os.Remove(commitMsgPath)
-	cmd := exec.Command("vim", commitMsgPath)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	exitCode := cmd.Run()
-	return exitCode
-}
-
 func getCommitParent() string {
 	repoRoot, _ := FindRepoRoot()
 	repoHeadPath := filepath.Join(repoRoot, MicroGitDir, "HEAD")
@@ -51,6 +39,28 @@ func getCommitParent() string {
 	return string(headRef)
 }
 
+func updateCurrentCommit(commitHash string) error{
+	repoRoot, _ := FindRepoRoot()
+	repoHeadPath := filepath.Join(repoRoot, MicroGitDir, "HEAD")
+	contents, _ := ioutil.ReadFile(repoHeadPath)
+	currentBranch := strings.Split(string(contents), " ")[1]
+	branchPath := filepath.Join(repoRoot, MicroGitDir, currentBranch)
+	err := ioutil.WriteFile(branchPath, []byte(commitHash), 0644)
+	return err
+}
+
+// Start user selected editor to create commit message
+func writeCommitMessage() error {
+	repoRoot, _ := FindRepoRoot()
+	commitMsgPath := filepath.Join(repoRoot, MicroGitDir, commitMsgFile)
+	os.Remove(commitMsgPath)
+	cmd := exec.Command("vim", commitMsgPath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	exitCode := cmd.Run()
+	return exitCode
+}
+
 // Retrieve the text for the commit message as string
 func getCommitMessageContents() ([]byte, error) {
 	repoRoot, _ := FindRepoRoot()
@@ -58,7 +68,7 @@ func getCommitMessageContents() ([]byte, error) {
 	return ioutil.ReadFile(commitMsgPath)
 }
 
-func constructCommitFile(treeHash, commitMsg, commitParent string) string {
+func buildCommitFileContents(treeHash, commitMsg, commitParent string) string {
 	// Temp variables
 	name := "Yavor"
 	email := "Hello@gmail.comg"
@@ -80,7 +90,7 @@ func createCommit() error {
 		return errors.New("Could not retrieve commit message contents.")
 	}
 	commitParent := getCommitParent()
-	commitFileContets := constructCommitFile(indexEntry.Hash(), string(commitMessage), commitParent)
+	commitFileContets := buildCommitFileContents(indexEntry.Hash(), string(commitMessage), commitParent)
 	fmt.Println(commitFileContets)
 	return nil
 }
