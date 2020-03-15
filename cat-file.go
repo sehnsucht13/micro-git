@@ -23,7 +23,6 @@ func findFileByHash(hash string) (string, string, error) {
 	dirFiles, _ := ioutil.ReadDir(objectFolderPath)
 	for _, file := range dirFiles {
 		hashDirFile, _ := ioutil.ReadDir(filepath.Join(objectFolderPath, file.Name()))
-		fmt.Println(strings.Join([]string{file.Name(), hashDirFile[0].Name()}, ""))
 		if len(hashDirFile) == 0 {
 			return "", "", errors.New("micro-git objects folder located at " + objectFolderPath + " is corrupted!")
 		}
@@ -38,8 +37,32 @@ func findFileByHash(hash string) (string, string, error) {
 	if hashFilePath == "" {
 		return "", "", errors.New("File corresponding to provided SHA1 hash could not be found!")
 	}
-	fmt.Println("Found file with ", hashFilePath)
 	return fullHashString, hashFilePath, nil
+}
+
+func decompressFileContents(path string) (string, error) {
+	fileContents, _ := os.Open(path)
+	var out bytes.Buffer
+
+	reader, err := zlib.NewReader(fileContents)
+	if err != nil {
+		return "", errors.New("Unable to read zlib compressed file due to: " + err.Error())
+	}
+	defer reader.Close()
+	io.Copy(&out, reader)
+	return string(out.Bytes()), nil
+}
+
+func printFileContents(hash string) (string, error) {
+	_, filePath, err := findFileByHash(hash)
+	if err != nil {
+		return "", err
+	}
+	fileContent, err := decompressFileContents(filePath)
+	if err != nil {
+		return "", err
+	}
+	return fileContent, nil
 }
 
 func getObjectSize(hash string) int64 {
@@ -57,24 +80,12 @@ func getObjectSize(hash string) int64 {
 	return -1
 }
 
-func objectStatus(hash string) int {
+func getObjectStatus(hash string) int {
 	_, _, err := findFileByHash(hash)
 	if err != nil {
 		return 1
 	}
 	return 0
-}
-func decompressFileContents(path string) (string, error) {
-	fileContents, _ := os.Open(path)
-	var out bytes.Buffer
-
-	reader, err := zlib.NewReader(fileContents)
-	if err != nil {
-		return "", errors.New("Unable to read zlib compressed file due to: " + err.Error())
-	}
-	defer reader.Close()
-	io.Copy(&out, reader)
-	return string(out.Bytes()), nil
 }
 
 func batchProcess(hash string) (string, error) {
@@ -106,7 +117,7 @@ func CatFile(size, pp, status, batch bool, hash []string) {
 		fmt.Println("Can only select one option at a time.")
 		os.Exit(1)
 	} else if truthValCount == 0 {
-		fmt.Println("Need to select an option!")
+		fmt.Println("Need to select an option for cat-file!")
 		os.Exit(1)
 	} else if (size || pp || status) && len(hash) == 0 {
 		fmt.Println("<object> argument missing.")
@@ -114,7 +125,7 @@ func CatFile(size, pp, status, batch bool, hash []string) {
 	}
 
 	if pp {
-		decompStr, err := decompressFileContents(hash[0])
+		decompStr, err := printFileContents(hash[0])
 		if err != nil {
 			fmt.Println("Cannot open object identifed by hash.", err.Error())
 			os.Exit(1)
@@ -125,7 +136,7 @@ func CatFile(size, pp, status, batch bool, hash []string) {
 		size := getObjectSize(hash[0])
 		fmt.Println(size)
 	} else if status {
-		exitStatus := objectStatus(hash[0])
+		exitStatus := getObjectStatus(hash[0])
 		os.Exit(exitStatus)
 	} else if batch {
 		scanner := bufio.NewScanner(os.Stdin)
