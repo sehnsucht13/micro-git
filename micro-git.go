@@ -45,7 +45,9 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(2)
 	}
-	if os.Args[1] == "init" {
+
+	switch os.Args[1] {
+	case "init":
 		initCmd.Parse(os.Args[2:])
 		switch len(initCmd.Args()) {
 		case 0:
@@ -61,19 +63,18 @@ func main() {
 			fmt.Println("micro-git init only accepts one repository path at a time!")
 			os.Exit(1)
 		}
-	} else if os.Args[1] == "config" {
+	case "config":
 		configCmd.Parse(os.Args[2:])
 		Config(*configCmdList, *configCmdKey, *configCmdVal, *configCmdLevel, *configCmdGet, *configCmdSet)
-	} else if os.Args[1] == "hash-object" {
+	case "hash-object":
 		hashObjectCmd.Parse(os.Args[2:])
 		HashObject(hashObjectCmd.Args(), *hashObjectCmdWrite, *hashObjectCmdStdin, *hashObjectCmdStdinPath)
-	} else {
-		_, err := FindRepoRoot()
-		if err != nil {
-			fmt.Println("Not currently visiting a micro-git repository.")
+	// Handle commands which need to be ran within a repository
+	default:
+		if !IsRepo() {
+			fmt.Println("fatal: Not currently visiting a micro-git repository.")
 			os.Exit(1)
 		}
-
 		switch os.Args[1] {
 		case "add":
 			AddFiles(os.Args[2:])
@@ -93,7 +94,7 @@ func main() {
 		case "hash-object":
 			hashObjectStdin()
 		default:
-			fmt.Println("Invalid Command!")
+			fmt.Println("fatal: Command", os.Args[1], "does not exist!")
 			os.Exit(1)
 		}
 	}
