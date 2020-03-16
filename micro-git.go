@@ -10,8 +10,15 @@ func main() {
 	initCmd := flag.NewFlagSet("init", flag.ExitOnError)
 	initCmdQuiet := initCmd.Bool("quiet", false, "Suppress all text output to stdout except errors.")
 
+	hashObjectCmd := flag.NewFlagSet("hash-object", flag.ExitOnError)
+	hashObjectCmdStdin := hashObjectCmd.Bool("stdin", false, "Display hash for input provided through stdin.")
+	hashObjectCmdStdinPath := hashObjectCmd.Bool("stdin-paths", false, "Display hash for filepaths provided through stdin.")
+	hashObjectCmdWrite := hashObjectCmd.Bool("w", false, "Write files to index after displaying their hash.")
+
 	configCmd := flag.NewFlagSet("config", flag.ExitOnError)
 	configCmdList := configCmd.Bool("list", false, "List all configuration values.")
+	configCmdGet := configCmd.Bool("get", false, "Retrieve the value for a certain key from the configuration file.")
+	configCmdSet := configCmd.Bool("set", false, "Set a new key-value pair in the configuration.")
 	configCmdLevel := configCmd.String("level", "", "Specify the level of the config")
 	configCmdKey := configCmd.String("key", "", "Set key  to value in configuration file.")
 	configCmdVal := configCmd.String("val", "", "Set specify value to set in configuration file.")
@@ -54,10 +61,13 @@ func main() {
 			fmt.Println("micro-git init only accepts one repository path at a time!")
 			os.Exit(1)
 		}
-	}else if os.Args[1] == "config"{
+	} else if os.Args[1] == "config" {
 		configCmd.Parse(os.Args[2:])
-		Config(*configCmdList, *configCmdKey, *configCmdVal, *configCmdLevel)
-	}else {
+		Config(*configCmdList, *configCmdKey, *configCmdVal, *configCmdLevel, *configCmdGet, *configCmdSet)
+	} else if os.Args[1] == "hash-object" {
+		hashObjectCmd.Parse(os.Args[2:])
+		HashObject(hashObjectCmd.Args(), *hashObjectCmdWrite, *hashObjectCmdStdin, *hashObjectCmdStdinPath)
+	} else {
 		_, err := FindRepoRoot()
 		if err != nil {
 			fmt.Println("Not currently visiting a micro-git repository.")
@@ -78,6 +88,10 @@ func main() {
 			statusCmd.Parse(os.Args[2:])
 			Status(*statusCmdShortDisp, *statusCmdLongDisp)
 		case "config":
+		case "commit":
+			createCommit()
+		case "hash-object":
+			hashObjectStdin()
 		default:
 			fmt.Println("Invalid Command!")
 			os.Exit(1)
