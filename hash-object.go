@@ -53,7 +53,7 @@ func HashObject(filePaths []string, writeFlag, stdin, stdinPath bool) {
 		os.Exit(1)
 	}
 
-	if len(filePaths) > 1 {
+	if len(filePaths) > 0 {
 		for _, path := range filePaths {
 			hash, err := hashObjectAtPath(path)
 			if err != nil {
