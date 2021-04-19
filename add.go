@@ -36,10 +36,7 @@ func compressString(stringContent string) []byte {
 // then return error
 func addObjectFile(fileContent string) (IndexEntry, error) {
 	index_entry := IndexEntry{entry_type: blob}
-	repoRoot, err := FindRepoRoot()
-	if err != nil {
-		return index_entry, errors.New("Not currently visiting a repository!")
-	}
+	repoRoot, _ := FindRepoRoot()
 	sha1String := hashString(fileContent)
 	compString := compressString(fileContent)
 

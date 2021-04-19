@@ -45,6 +45,7 @@ func hashObjectStdinPath() {
 	}
 }
 
+// HashObject TODO: NEEDS COMMENT INFO
 func HashObject(filePaths []string, writeFlag, stdin, stdinPath bool) {
 	if stdin {
 		hashObjectStdin()
